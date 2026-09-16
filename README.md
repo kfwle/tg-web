@@ -7,21 +7,21 @@
 ### Через curl
 
 ```bash
-curl -sO https://raw.githubusercontent.com/prominbro/tg-web/main/install.sh
+curl -sO https://raw.githubusercontent.com/kfwle/tg-web/main/install.sh
 sudo bash install.sh
 ```
 
 ### Через wget
 
 ```bash
-wget https://raw.githubusercontent.com/prominbro/tg-web/main/install.sh
+wget https://raw.githubusercontent.com/kfwle/tg-web/main/install.sh
 sudo bash install.sh
 ```
 
 ### Через git clone
 
 ```bash
-git clone https://github.com/prominbro/tg-web.git
+git clone https://github.com/kfwle/tg-web.git
 cd tg-web
 sudo bash install.sh
 ```
@@ -72,14 +72,14 @@ sudo bash install.sh
 ### Через curl
 
 ```bash
-curl -sO https://raw.githubusercontent.com/prominbro/tg-web/main/uninstall.sh
+curl -sO https://raw.githubusercontent.com/kfwle/tg-web/main/uninstall.sh
 sudo bash uninstall.sh
 ```
 
 ### Через wget
 
 ```bash
-wget https://raw.githubusercontent.com/prominbro/tg-web/main/uninstall.sh
+wget https://raw.githubusercontent.com/kfwle/tg-web/main/uninstall.sh
 sudo bash uninstall.sh
 ```
 
