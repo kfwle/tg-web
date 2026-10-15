@@ -7,6 +7,7 @@ C='\033[0;36m' M='\033[0;35m' W='\033[1;37m' D='\033[0m'
 ok()   { echo -e "${G}[✓]${D} $*"; }
 fail() { echo -e "${R}[✗]${D} $*"; exit 1; }
 info() { echo -e "${C}[i]${D} $*"; }
+warn() { echo -e "${Y}[!]${D} $*"; }
 ask()  { echo -e "${W}$1${D}"; }
 
 # ─── Repo URL (change to your fork) ─────────────────────────────────────
@@ -21,7 +22,7 @@ if [[ -d "$SCRIPT_DIR/sites/_shared" ]]; then
 else
   info "Скачиваю tproxy-deploy..."
   TEMP_DIR="$(mktemp -d /tmp/tproxy-deploy.XXXXXX)"
-  trap 'rm -rf "$TEMP_DIR"' EXIT
+  trap 'rm -rf "${TEMP_DIR:-}"' EXIT
   curl -sL "${REPO_URL}/archive/refs/heads/main.tar.gz" | tar -xz -C "$TEMP_DIR" --strip-components=1
   DEPLOY_DIR="$TEMP_DIR"
   ok "Репозиторий скачан"
@@ -109,19 +110,24 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y -qq --no-install-recommends \
   curl git build-essential libssl-dev zlib1g-dev \
-  ca-certificates nftables certbot python3-certbot-nginx >/dev/null 2>&1
+  ca-certificates nftables nginx certbot python3-certbot-nginx >/dev/null 2>&1
 ok "Зависимости установлены"
 
 # ─── Go check ───────────────────────────────────────────────────────────
-if ! command -v go &>/dev/null; then
-  info "Устанавливаю Go..."
-  GO_VER="1.23.1"
+# Переустанавливаем начисто, если go отсутствует ИЛИ сломан
+# (распаковка поверх старого GOROOT смешивает файлы двух версий
+#  и даёт "redeclared" в runtime — чинить только сносом).
+GO_VER="1.23.1"
+if command -v go &>/dev/null && go version &>/dev/null; then
+  ok "Go уже стоит: $(go version)"
+else
+  info "Устанавливаю Go ${GO_VER} (чистая установка)..."
+  rm -rf /usr/local/go
   curl -sL "https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz" | tar -C /usr/local -xzf -
   echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile.d/go.sh
   export PATH=$PATH:/usr/local/go/bin
+  go version &>/dev/null || fail "Go не встал, проверь вручную: ls /usr/local/go"
   ok "Go ${GO_VER} установлен"
-else
-  ok "Go уже стоит: $(go version)"
 fi
 
 # ─── Clone repo ─────────────────────────────────────────────────────────
@@ -158,8 +164,9 @@ info "Генерирую секреты..."
 SECRET=$(openssl rand -hex 16)
 ok "Секрет сгенерирован"
 
-# ─── Create tproxy user ────────────────────────────────────────────────
+# ─── Create users ──────────────────────────────────────────────────────
 id tproxy &>/dev/null || useradd --system --home /nonexistent --shell /usr/sbin/nologin tproxy
+id mtproxy &>/dev/null || useradd --system --home /nonexistent --shell /usr/sbin/nologin mtproxy
 
 # ─── Install configs ───────────────────────────────────────────────────
 info "Создаю конфиги..."
