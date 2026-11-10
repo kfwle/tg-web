@@ -393,17 +393,29 @@ fi
 
 # ─── SSL cert ───────────────────────────────────────────────────────────
 info "Получаю SSL-сертификат..."
-if certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --redirect -m "$EMAIL" 2>/dev/null; then
+CERTBOT_LOG="$(mktemp /tmp/certbot.XXXXXX.log)"
+if certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --redirect -m "$EMAIL" 2>&1 | tee "$CERTBOT_LOG" >/dev/null; then
   ok "Сертификат получен и установлен"
 else
   echo -e "${Y}[!]${D} Certbot не смог получить сертификат. Возможные причины:"
   echo -e "    - DNS A-запись ${DOMAIN} не указывает на этот сервер"
   echo -e "    - Порты 80/443 заняты другим сервисом"
-  echo -e "    Попробуй вручную: certbot --nginx -d ${DOMAIN}"
+  echo -e "    - Лимиты Let's Encrypt по зоне домена"
+  echo -e "  Последние строки лога certbot:"
+  tail -n 8 "$CERTBOT_LOG" | sed 's/^/    /'
+  echo -e "    Попробуй вручную: certbot --nginx -d ${DOMAIN} --redirect"
 fi
+rm -f "$CERTBOT_LOG"
 
 # ─── Verify ─────────────────────────────────────────────────────────────
 echo ""
+echo -e "${W}═══ Финальная проверка ═══${D}"
+if curl -sIf --max-time 15 "https://${DOMAIN}/" >/dev/null 2>&1; then
+  ok "https://${DOMAIN}/ отвечает по HTTPS"
+else
+  warn "https://${DOMAIN}/ НЕ отвечает — прокси работать не будет!"
+  echo -e "    Клиентская ссылка станет рабочей только после того, как сайт откроется по HTTPS."
+fi
 echo -e "${W}══════════════════════════════════════════════════════════${D}"
 echo -e "${G}  Установка завершена!${D}"
 echo -e "${W}══════════════════════════════════════════════════════════${D}"
