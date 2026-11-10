@@ -245,6 +245,15 @@ chown root:root /etc/tproxy-server/profiles.json
 chmod 0400 /etc/tproxy-server/profiles.json
 ok "Конфиги созданы"
 
+# ─── Token key (tproxy-server не стартует без него) ─────────────────────
+# Постоянный 32-байтный ключ подписи токенов; скрипт идемпотентный —
+# существующий ключ при повторной установке не трогает.
+info "Провижиню token.key..."
+ENSURE_KEY="$WORKDIR/tproxy-server/deploy/ensure-token-key.sh"
+[[ -f "$ENSURE_KEY" ]] || fail "Не найден ${ENSURE_KEY} — обнови клон tproxy-server"
+bash "$ENSURE_KEY" /etc/tproxy-server/token.key || fail "Не удалось создать /etc/tproxy-server/token.key"
+ok "Token key готов: /etc/tproxy-server/token.key"
+
 # ─── MTProxy config ─────────────────────────────────────────────────────
 cat > /etc/mtproxy/mtproxy.env <<MTEOF
 MTPROXY_WORKERS=1
